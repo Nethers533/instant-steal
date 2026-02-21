@@ -1,6 +1,7 @@
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
+
 local UIS = game:GetService("UserInputService")
 
 local tpPosition = hrp.CFrame
@@ -15,32 +16,20 @@ frame.Position = UDim2.new(0.5, -100, 0.5, -90)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.BorderSizePixel = 0
 
--- Bouton Set TP
-local setTP = Instance.new("TextButton", frame)
-setTP.Size = UDim2.new(1, -20, 0, 30)
-setTP.Position = UDim2.new(0, 10, 0, 10)
-setTP.Text = "Set TP"
-setTP.BackgroundColor3 = Color3.fromRGB(60,120,255)
-setTP.TextColor3 = Color3.new(1,1,1)
-setTP.BorderSizePixel = 0
+local function makeButton(text, y)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1, -20, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, y)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(60,120,255)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.BorderSizePixel = 0
+    return btn
+end
 
--- Bouton TP
-local normalTP = Instance.new("TextButton", frame)
-normalTP.Size = UDim2.new(1, -20, 0, 30)
-normalTP.Position = UDim2.new(0, 10, 0, 50)
-normalTP.Text = "TP"
-normalTP.BackgroundColor3 = Color3.fromRGB(60,200,120)
-normalTP.TextColor3 = Color3.new(1,1,1)
-normalTP.BorderSizePixel = 0
-
--- Bouton Steal Exotic (placeholder)
-local stealBtn = Instance.new("TextButton", frame)
-stealBtn.Size = UDim2.new(1, -20, 0, 30)
-stealBtn.Position = UDim2.new(0, 10, 0, 90)
-stealBtn.Text = "Steal Exotic"
-stealBtn.BackgroundColor3 = Color3.fromRGB(200,120,60)
-stealBtn.TextColor3 = Color3.new(1,1,1)
-stealBtn.BorderSizePixel = 0
+local setTP = makeButton("Set TP", 10)
+local normalTP = makeButton("TP", 50)
+local forwardBtn = makeButton("TP Forward", 90) -- bouton tactile
 
 local credit = Instance.new("TextLabel", frame)
 credit.Size = UDim2.new(1, 0, 0, 20)
@@ -51,40 +40,69 @@ credit.TextColor3 = Color3.fromRGB(180,180,180)
 credit.Font = Enum.Font.SourceSans
 credit.TextSize = 14
 
--- Set position
+-- SET TP
 setTP.MouseButton1Click:Connect(function()
     tpPosition = hrp.CFrame
 end)
 
--- TP temporaire
+-- TP TEMPORAIRE
 local function doTempTP()
-    local oldPosition = hrp.CFrame
+    local old = hrp.CFrame
     hrp.CFrame = tpPosition
     task.wait(0.5)
-    hrp.CFrame = oldPosition
+    hrp.CFrame = old
 end
 
--- TP normal
+-- TP NORMAL
 local function doNormalTP()
     hrp.CFrame = tpPosition
 end
 
--- Fonction Steal Exotic (à adapter pour ton jeu légitime)
-local function stealExotic()
-    print("Steal Exotic activé (placeholder)")
+-- NOCLIP UTILS
+local function setCollision(state)
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = state
+        end
+    end
 end
 
-normalTP.MouseButton1Click:Connect(doNormalTP)
-stealBtn.MouseButton1Click:Connect(stealExotic)
+-- TP FORWARD AVEC NOCLIP
+local function tpForward(distance, steps)
+    distance = distance or 8
+    steps = steps or 25
+    
+    local stepSize = distance / steps
+    
+    -- noclip ON
+    setCollision(false)
+    
+    for i = 1, steps do
+        hrp.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * stepSize)
+        task.wait()
+    end
+    
+    -- noclip OFF
+    setCollision(true)
+end
 
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
+-- BOUTONS
+normalTP.MouseButton1Click:Connect(doNormalTP)
+forwardBtn.MouseButton1Click:Connect(function()
+    tpForward()
+end)
+
+-- TOUCHES CLAVIER
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
     
     if input.KeyCode == Enum.KeyCode.F then
         doTempTP()
-    end
-    
-    if input.KeyCode == Enum.KeyCode.G then
+        
+    elseif input.KeyCode == Enum.KeyCode.G then
         doNormalTP()
+        
+    elseif input.KeyCode == Enum.KeyCode.A then
+        tpForward()
     end
 end)
